@@ -46,7 +46,7 @@ class ProductController extends Controller
 
         $img_path = null;
 
-        dd($request->img);
+      
 
         if ($request->hasFile('img')) {
             $img_path = $request->file('img')->store('products/images', 'public');
