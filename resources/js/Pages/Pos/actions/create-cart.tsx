@@ -9,7 +9,7 @@ import KdSelectInput from "@/components/form/kd-select-input";
 import KdNumericInput from "@/components/form/kd-numeric-input";
 import KdSearchSelect from "@/components/form/kd-search-select";
 import KdTextInput from "@/components/form/kd-text-input";
-import { PlusCircle, ShoppingCart, Percent } from "lucide-react";
+import { PlusCircle, ShoppingCart } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +55,6 @@ const CreateCart = ({
 }) => {
     const [items, setItems] = useState<Item[]>([initialItem]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [overallDiscount, setOverallDiscount] = useState<number | null>(null);
 
     const user = usePage().props.auth.user;
 
@@ -68,8 +67,6 @@ const CreateCart = ({
         customer_name: "",
         customer_contact: "",
         customer_address: "",
-        discount: 0, // Add discount to the form data
-        total_amount: 0, // Add total amount to the form data
     });
 
     const statuses = [
@@ -77,25 +74,6 @@ const CreateCart = ({
         { id: "pending", name: "Pending" },
         { id: "credit", name: "Credit order" },
     ];
-
-    const calculateItemTotal = (item: Item): number => {
-        return (item.price - item.discount) * item.qty;
-    };
-
-    const calculateSubtotal = (): number => {
-        return items.reduce((acc, item) => acc + item.price * item.qty, 0);
-    };
-
-    const calculateTotalDiscount = (): number => {
-        return items.reduce((acc, item) => acc + item.discount * item.qty, 0);
-    };
-
-    const calculateGrandTotal = (): number => {
-        const subtotal = calculateSubtotal();
-        const itemDiscount = calculateTotalDiscount();
-        const overallDiscountAmount = overallDiscount !== null ? overallDiscount : 0;
-        return subtotal - itemDiscount - overallDiscountAmount;
-    };
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -111,12 +89,7 @@ const CreateCart = ({
                 customer_name: data.customer_name,
                 customer_contact: data.customer_contact,
                 customer_address: data.customer_address,
-                order_items: items.map(item => ({
-                    ...item,
-                    total: calculateItemTotal(item), // Ensure total is recalculated before submit
-                })) as any,
-                discount: overallDiscount !== null ? overallDiscount : 0, // Send overall discount
-                total_amount: calculateGrandTotal(), // Send the final total amount
+                order_items: items as any,
             },
             {
                 preserveScroll: true,
@@ -127,26 +100,12 @@ const CreateCart = ({
                     toast.success("Purchase order Created successfully");
                     reset();
                     setItems([initialItem]);
-                    setOverallDiscount(null);
                 },
                 onError: () => {
                     toast.error("Something went wrong");
                 },
             }
         );
-    };
-
-    const handleItemChange = (index: number, field: keyof Item, value: any) => {
-        const updatedItems = items.map((item, i) =>
-            i === index
-                ? {
-                    ...item,
-                    [field]: value,
-                    total: calculateItemTotal({ ...item, [field]: value }),
-                }
-                : item
-        );
-        setItems(updatedItems);
     };
 
     return (
@@ -299,7 +258,7 @@ const CreateCart = ({
                                         index,
                                         handleChange
                                     ) => (
-                                        <div className="grid grid-cols-1 lg:grid-cols-3  gap-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2  gap-4">
                                             <div>
                                                 <KdSearchSelect
                                                     label="Product"
@@ -347,13 +306,52 @@ const CreateCart = ({
                                                         id={index}
                                                         value={item.qty.toString()}
                                                         onChange={(e) =>
-                                                            handleItemChange(
+                                                            handleChange(
                                                                 index,
-                                                                "qty",
-                                                                parseFloat(
-                                                                    e.target
-                                                                        .value
-                                                                )
+                                                                undefined,
+                                                                {
+                                                                    qty: parseFloat(
+                                                                        e.target
+                                                                            .value
+                                                                    ),
+                                                                    price:
+                                                                        parseFloat(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        ) > 0 &&
+                                                                        item.whole_stock >
+                                                                            0 &&
+                                                                        parseFloat(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        ) >=
+                                                                            item.whole_stock
+                                                                            ? item.whole_price
+                                                                            : item.original_price,
+                                                                    total:
+                                                                        (parseFloat(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        ) > 0 &&
+                                                                        item.whole_stock >
+                                                                            0 &&
+                                                                        parseFloat(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        ) >=
+                                                                            item.whole_stock
+                                                                            ? item.whole_price
+                                                                            : item.original_price) *
+                                                                        parseFloat(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        ),
+                                                                }
                                                             )
                                                         }
                                                     />
@@ -368,36 +366,31 @@ const CreateCart = ({
                                                             "admin"
                                                         }
                                                         onChange={(e) =>
-                                                            handleItemChange(
+                                                            handleChange(
                                                                 index,
                                                                 "price",
-                                                                parseFloat(e.target.value)
+                                                                e.target
+                                                                    .value as any
                                                             )
                                                         }
                                                     />
                                                 </div>
                                                 <div className="w-full">
                                                     <KdNumericInput
-                                                        label="Discount"
+                                                        label="Total"
                                                         id={index}
-                                                        value={item.discount.toString()}
+                                                        value={item.total.toString()}
+                                                        readonly={true}
                                                         onChange={(e) =>
-                                                            handleItemChange(
+                                                            handleChange(
                                                                 index,
-                                                                "discount",
-                                                                parseFloat(e.target.value)
+                                                                "total",
+                                                                e.target
+                                                                    .value as any
                                                             )
                                                         }
                                                     />
                                                 </div>
-                                            </div>
-                                            <div className="w-full">
-                                                <KdNumericInput
-                                                    label="Total"
-                                                    id={index}
-                                                    value={calculateItemTotal(item).toString()}
-                                                    readonly={true}
-                                                />
                                             </div>
                                         </div>
                                     )}
@@ -406,50 +399,27 @@ const CreateCart = ({
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 p-2 rounded">
-                        <div className="flex justify-between items-center py-2">
-                            <h2 className="text-lg font-semibold">Subtotal</h2>
-                            <NumberFlow
-                                value={calculateSubtotal()}
-                                className="text-lg text-gray-700 dark:text-gray-300 font-semibold"
-                            />
-                        </div>
-                        <div className="flex justify-between items-center py-2">
-                            <h2 className="text-lg font-semibold">Item Discount</h2>
-                            <NumberFlow
-                                value={calculateTotalDiscount()}
-                                className="text-lg text-red-500 font-semibold"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2 py-2">
-                            <Label htmlFor="overall_discount" className="w-1/2 font-semibold">Overall Discount</Label>
-                            <div className="flex items-center gap-1 w-1/2">
-                                <Input
-                                    type="number"
-                                    id="overall_discount"
-                                    className="h-9"
-                                    value={overallDiscount !== null ? overallDiscount.toString() : ""}
-                                    onChange={(e) => {
-                                        const value = e.target.value === "" ? null : parseFloat(e.target.value);
-                                        setOverallDiscount(value);
-                                    }}
+                    <div className="">
+                        <div className="flex justify-between items-center gap-2 py-3 px-2 bg-white dark:bg-gray-800">
+                            <h2 className="text-lg font-bold">
+                                Total{" "}
+                                <NumberFlow
+                                    value={items.reduce(
+                                        (acc, item) =>
+                                            acc + item.price * item.qty,
+                                        0
+                                    )}
+                                    className="text-lg text-green-500 font-bold"
                                 />
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <Button type="submit" disabled={isProcessing}>
+                                    <ShoppingCart />
+                                    {isProcessing
+                                        ? "Processing..."
+                                        : "Sell products"}
+                                </Button>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center py-3 mt-2 border-t dark:border-gray-700">
-                            <h2 className="text-xl font-bold">Grand Total</h2>
-                            <NumberFlow
-                                value={calculateGrandTotal()}
-                                className="text-xl text-green-500 font-bold"
-                            />
-                        </div>
-                        <div className="flex justify-end items-center gap-2 pt-4">
-                            <Button type="submit" disabled={isProcessing}>
-                                <ShoppingCart />
-                                {isProcessing
-                                    ? "Processing..."
-                                    : "Sell products"}
-                            </Button>
                         </div>
                     </div>
                 </form>
