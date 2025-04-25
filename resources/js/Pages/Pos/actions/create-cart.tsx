@@ -56,6 +56,8 @@ const CreateCart = ({
     const [items, setItems] = useState<Item[]>([initialItem]);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    console.log(items);
+
     const user = usePage().props.auth.user;
 
     const { data, setData, reset } = useForm({
@@ -287,6 +289,7 @@ const CreateCart = ({
                                                                     whole_price:
                                                                         selectedProduct.whole_price,
                                                                     price: selectedProduct.sell_price,
+                                                                    discount: 0,
                                                                     original_price:
                                                                         selectedProduct.sell_price,
                                                                     total:
@@ -357,6 +360,23 @@ const CreateCart = ({
                                                     />
                                                 </div>
                                                 <div className="w-full">
+                                                    <KdTextInput
+                                                        label="Discount"
+                                                        type="number"
+                                                        id={index}
+                                                        value={item.discount.toString()}
+                                                        onChange={(e) =>
+                                                            handleChange(
+                                                                index,
+                                                                undefined,
+                                                                {
+                                                                    discount: parseFloat(e.target.value),
+                                                                }
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="w-full">
                                                     <KdNumericInput
                                                         label="Price"
                                                         id={index}
@@ -406,7 +426,7 @@ const CreateCart = ({
                                 <NumberFlow
                                     value={items.reduce(
                                         (acc, item) =>
-                                            acc + item.price * item.qty,
+                                            acc + item.total - item.discount,
                                         0
                                     )}
                                     className="text-lg text-green-500 font-bold"

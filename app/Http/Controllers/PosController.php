@@ -96,6 +96,7 @@ class PosController extends Controller
                             'pending_qty' => $item['qty'],
                             'price' => $item['price'],
                             'buy_price' => $item['buy_price'],
+                            'discount' => $item['discount'],
                         ]);
                         break;
                     default:
@@ -104,6 +105,7 @@ class PosController extends Controller
                             'qty' => $item['qty'],
                             'price' => $item['price'],
                             'buy_price' => $item['buy_price'],
+                            'discount' => $item['discount'],
                         ]);
                         break;
                 }

@@ -42,6 +42,13 @@ export const userOrderItemColumns: ColumnDef<OrderItem>[] = [
         },
     },
     {
+        accessorKey: "discount",
+        header: "Discount",
+        cell: ({ row }) => {
+            return <div>{numberFormat(row.original.discount)}</div>;
+        },
+    },
+    {
         accessorKey: "total",
         header: "Total",
         cell: ({ row }) => {
